@@ -1,0 +1,8 @@
+{
+  "name": "PT Berkah Alam Mulia",
+  "description": "Aplikasi ERP dan pembukuan material konstruksi terintegrasi dengan modul penjualan, pembelian quarry, rekap invoice PO, form insentif otomatis berdasarkan volume & tujuan, form gaji & cetak slip terintegrasi, perpajakan DJP, dan laporan akuntansi.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
