@@ -3,9 +3,13 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig} from 'vite';
 
-export default defineConfig(() => {
+export default defineConfig(({ command }) => {
+  // Ganti '/repo-name/' dengan nama repository GitHub Anda (contoh: '/material-erp/')
+  // Pada saat 'npm run build', base ini akan disematkan ke seluruh asset static.
+  const repoName = '/repo-name/';
+
   return {
-    base: './',
+    base: process.env.BASE_URL || (command === 'build' ? repoName : '/'),
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
