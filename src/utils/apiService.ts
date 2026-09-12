@@ -11,54 +11,27 @@ export interface SyncResponse {
   error?: string;
 }
 
-// Check if running on static hosting environments like GitHub Pages
-const isStaticHost =
-  typeof window !== 'undefined' &&
-  (window.location.hostname.endsWith('github.io') ||
-    window.location.hostname.endsWith('surge.sh') ||
-    window.location.hostname.endsWith('gitlab.io') ||
-    window.location.hostname.endsWith('web.app') ||
-    window.location.protocol === 'file:');
-
-let backendAvailable = !isStaticHost;
-
 export const apiService = {
-  isStaticMode(): boolean {
-    return !backendAvailable;
-  },
-
   /**
    * Fetch all app data from the backend database
    */
   async getDatabaseData(): Promise<any> {
-    if (!backendAvailable) {
-      return null;
+    const res = await fetch('/api/data', {
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Server returned status ${res.status}: ${res.statusText}`);
     }
 
-    try {
-      const res = await fetch('/api/data', {
-        headers: {
-          Accept: 'application/json',
-        },
-      });
-
-      if (!res.ok) {
-        if (res.status === 404 || res.status === 502) {
-          backendAvailable = false;
-        }
-        throw new Error(`Server returned status ${res.status}: ${res.statusText}`);
-      }
-
-      const json: SyncResponse = await res.json();
-      if (!json.success || !json.data) {
-        throw new Error(json.error || 'Data database kosong atau tidak valid');
-      }
-
-      return json.data;
-    } catch (e) {
-      backendAvailable = false;
-      throw e;
+    const json: SyncResponse = await res.json();
+    if (!json.success || !json.data) {
+      throw new Error(json.error || 'Data database kosong atau tidak valid');
     }
+
+    return json.data;
   },
 
   /**
@@ -68,51 +41,27 @@ export const apiService = {
     dataPayload: Record<string, any>,
     options?: { keepalive?: boolean }
   ): Promise<SyncResponse> {
-    if (!backendAvailable) {
-      return {
-        success: true,
-        message: 'Tersimpan otomatis ke penyimpanan lokal browser (Mode Statis / GitHub Pages)',
-        lastSaved: new Date().toLocaleTimeString('id-ID', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        }),
-      };
+    const res = await fetch('/api/data', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ data: dataPayload }),
+      keepalive: options?.keepalive ?? false,
+    });
+
+    if (!res.ok) {
+      throw new Error(`Gagal menyimpan ke server: status ${res.status}`);
     }
 
-    try {
-      const res = await fetch('/api/data', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({ data: dataPayload }),
-        keepalive: options?.keepalive ?? false,
-      });
-
-      if (!res.ok) {
-        if (res.status === 404 || res.status === 502) {
-          backendAvailable = false;
-        }
-        throw new Error(`Gagal menyimpan ke server: status ${res.status}`);
-      }
-
-      return await res.json();
-    } catch (e) {
-      backendAvailable = false;
-      throw e;
-    }
+    return await res.json();
   },
 
   /**
    * Guaranteed exit save using keepalive fetch or sendBeacon
    */
   saveOnExit(dataPayload: Record<string, any>): void {
-    if (!backendAvailable) {
-      return;
-    }
-
     try {
       const payloadString = JSON.stringify({ data: dataPayload });
 
@@ -143,53 +92,37 @@ export const apiService = {
    * Reset backend database to default demo data
    */
   async resetDatabase(): Promise<any> {
-    if (!backendAvailable) {
-      return null;
+    const res = await fetch('/api/data/reset', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Gagal mereset database: ${res.statusText}`);
     }
 
-    try {
-      const res = await fetch('/api/data/reset', {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-        },
-      });
-
-      if (!res.ok) {
-        return null;
-      }
-
-      const json = await res.json();
-      return json.data;
-    } catch {
-      return null;
-    }
+    const json = await res.json();
+    return json.data;
   },
 
   /**
    * Wipe transactional records from database
    */
   async wipeDatabase(): Promise<any> {
-    if (!backendAvailable) {
-      return null;
+    const res = await fetch('/api/data/wipe', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Gagal mengosongkan transaksi: ${res.statusText}`);
     }
 
-    try {
-      const res = await fetch('/api/data/wipe', {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-        },
-      });
-
-      if (!res.ok) {
-        return null;
-      }
-
-      const json = await res.json();
-      return json.data;
-    } catch {
-      return null;
-    }
+    const json = await res.json();
+    return json.data;
   },
 };
