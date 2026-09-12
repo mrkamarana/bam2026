@@ -124,6 +124,11 @@ export function useAutoSaveSync(
     let isSubscribed = true;
 
     async function loadInitialDatabase() {
+      if (apiService.isStaticMode()) {
+        setSaveStatus('synced');
+        return;
+      }
+
       try {
         const serverData = await apiService.getDatabaseData();
         if (isSubscribed && serverData && typeof serverData === 'object') {
